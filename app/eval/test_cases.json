@@ -1,0 +1,152 @@
+[
+  {
+    "name": "No evidence should not PASS",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "What is AI-Pass?",
+      "doc_ids": ["wrong_doc"],
+      "policy": {}
+    },
+    "expected_decision": "NEEDS_INFO",
+    "expect_evidence": false
+  },
+  {
+    "name": "Relevant evidence should PASS",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "What is AI-Pass?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected_decision": "PASS",
+    "expect_evidence": true
+  },
+  {
+    "name": "Irrelevant query should NEEDS_INFO (no evidence)",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "Explain quantum mechanics in one line.",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected_decision": "NEEDS_INFO",
+    "expect_evidence": false
+  },
+  {
+    "name": "Policy: invoice > 5000 requires human approval",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice amount 6200",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 6200,
+        "human_approval_threshold": 5000
+      }
+    },
+    "expected_decision": "NEEDS_INFO",
+    "expect_evidence": false
+  },
+  {
+    "name": "Invoice missing required fields -> NEEDS_INFO",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 1200,
+        "human_approval_threshold": 5000,
+        "required_fields": ["vendor", "invoice_number", "invoice_date", "total_amount"],
+        "provided_fields": ["vendor", "total_amount"]
+      }
+    },
+    "expected_decision": "NEEDS_INFO",
+    "expect_evidence": false
+  },
+  {
+    "name": "Invoice duplicate -> FAIL",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 800,
+        "duplicate_flag": true
+      }
+    },
+    "expected_decision": "FAIL",
+    "expect_evidence": false
+  },
+  {
+    "name": "Invoice fraud -> FAIL",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 800,
+        "fraud_flag": true
+      }
+    },
+    "expected_decision": "FAIL",
+    "expect_evidence": false
+  },
+  {
+    "name": "Invoice amount exactly 5000 -> should not require approval",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice amount 5000",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 5000,
+        "human_approval_threshold": 5000
+      }
+    },
+    "expected_decision": "NEEDS_INFO",
+    "expect_evidence": false
+  },
+  {
+    "name": "Invoice amount 5001 -> requires human approval",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice amount 5001",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 5001,
+        "human_approval_threshold": 5000
+      }
+    },
+    "expected_decision": "NEEDS_INFO",
+    "expect_evidence": false
+  },
+  {
+    "name": "Fraud overrides everything -> FAIL",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 1200,
+        "fraud_flag": true,
+        "provided_fields": ["vendor", "invoice_number", "invoice_date", "total_amount"]
+      }
+    },
+    "expected_decision": "FAIL",
+    "expect_evidence": false
+  },
+  {
+    "name": "Duplicate overrides missing fields -> FAIL",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 1200,
+        "duplicate_flag": true,
+        "required_fields": ["vendor", "invoice_number", "invoice_date", "total_amount"],
+        "provided_fields": ["vendor"]
+      }
+    },
+    "expected_decision": "FAIL",
+    "expect_evidence": false
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "audit_id": "019c36cd-d561-706a-aabb-a608a9e62957",
+  "task_type": "doc_qa",
+  "query": "Explain quantum mechanics in one line.",
+  "doc_ids": [
+    "doc_1"
+  ],
+  "decision": "NEEDS_INFO",
+  "confidence": 0.4,
+  "top_retrieval_score": null,
+  "evidence_count": 0,
+  "min_evidence_score": 0.3,
+  "policy": {},
+  "policy_violations": [],
+  "missing_info": [],
+  "evidence": []
+}

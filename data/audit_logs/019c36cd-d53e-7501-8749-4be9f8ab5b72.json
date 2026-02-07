@@ -1,0 +1,17 @@
+{
+  "audit_id": "019c36cd-d53e-7501-8749-4be9f8ab5b72",
+  "task_type": "doc_qa",
+  "query": "What is AI-Pass?",
+  "doc_ids": [
+    "wrong_doc"
+  ],
+  "decision": "NEEDS_INFO",
+  "confidence": 0.4,
+  "top_retrieval_score": null,
+  "evidence_count": 0,
+  "min_evidence_score": 0.3,
+  "policy": {},
+  "policy_violations": [],
+  "missing_info": [],
+  "evidence": []
+}

@@ -1,0 +1,223 @@
+[
+  {
+    "id": "doc_no_evidence",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "What is the refund policy?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "doc_relevant_evidence",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "What is AI-Pass?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "PASS",
+      "evidence": true
+    }
+  },
+  {
+    "id": "doc_irrelevant_query_should_needinfo",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "Explain quantum mechanics in one line.",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "doc_short_query_no_evidence",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "Refund?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "doc_security_question_should_needinfo",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "Does AI-Pass encrypt secrets and isolate tenants?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "PASS",
+      "evidence": true
+    }
+  },
+  {
+    "id": "doc_pricing_question_should_pass",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "What are the individual pricing plans for AI-Pass?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "PASS",
+      "evidence": true
+    }
+  },
+  {
+    "id": "doc_marketplace_apps_question_should_pass",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "Name some marketplace applications in AI-Pass.",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "PASS",
+      "evidence": true
+    }
+  },
+  {
+    "id": "doc_wallet_question_should_pass",
+    "task": {
+      "task_type": "doc_qa",
+      "query": "What is the AI wallet used for in AI-Pass?",
+      "doc_ids": ["doc_1"],
+      "policy": {}
+    },
+    "expected": {
+      "decision": "PASS",
+      "evidence": true
+    }
+  },
+  {
+    "id": "invoice_amount_5001",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice amount 5001",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 5001,
+        "human_approval_threshold": 5000
+      }
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "invoice_amount_exact_5000_should_not_require_approval",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice amount 5000",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 5000,
+        "human_approval_threshold": 5000
+      }
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "invoice_amount_below_threshold",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice amount 1200",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 1200,
+        "human_approval_threshold": 5000
+      }
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "invoice_missing_required_fields",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice (missing invoice number and VAT ID)",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 800,
+        "human_approval_threshold": 5000,
+        "missing_required_fields": true
+      }
+    },
+    "expected": {
+      "decision": "NEEDS_INFO",
+      "evidence": false
+    }
+  },
+  {
+    "id": "invoice_duplicate_should_fail",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice but it is a duplicate",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 900,
+        "human_approval_threshold": 5000,
+        "duplicate_flag": true
+      }
+    },
+    "expected": {
+      "decision": "FAIL",
+      "evidence": false
+    }
+  },
+  {
+    "id": "invoice_fraud_should_fail",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Approve invoice but fraud detected",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 300,
+        "human_approval_threshold": 5000,
+        "fraud_flag": true
+      }
+    },
+    "expected": {
+      "decision": "FAIL",
+      "evidence": false
+    }
+  },
+  {
+    "id": "invoice_duplicate_overrides_missing_fields_should_fail",
+    "task": {
+      "task_type": "invoice_approval",
+      "query": "Invoice is duplicate and also missing fields",
+      "doc_ids": [],
+      "policy": {
+        "invoice_amount": 2000,
+        "human_approval_threshold": 5000,
+        "duplicate_flag": true,
+        "missing_required_fields": true
+      }
+    },
+    "expected": {
+      "decision": "FAIL",
+      "evidence": false
+    }
+  }
+]

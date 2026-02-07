@@ -1,0 +1,24 @@
+{
+  "audit_id": "019c36dc-861e-7e1b-a051-278a76a6ab5e",
+  "task_type": "invoice_approval",
+  "query": "Approve invoice amount 6200",
+  "doc_ids": [],
+  "decision": "NEEDS_INFO",
+  "confidence": 0.4,
+  "top_retrieval_score": null,
+  "evidence_count": 0,
+  "min_evidence_score": 0.3,
+  "policy": {
+    "invoice_amount": 6200,
+    "human_approval_threshold": 5000
+  },
+  "policy_violations": [
+    "MISSING_REQUIRED_FIELDS",
+    "HUMAN_APPROVAL_REQUIRED"
+  ],
+  "missing_info": [
+    "Missing required fields: vendor, invoice_number, invoice_date, total_amount",
+    "Invoice amount 6200 > 5000. Require human approval."
+  ],
+  "evidence": []
+}

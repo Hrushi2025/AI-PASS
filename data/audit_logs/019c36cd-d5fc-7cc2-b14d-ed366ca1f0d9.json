@@ -1,0 +1,26 @@
+{
+  "audit_id": "019c36cd-d5fc-7cc2-b14d-ed366ca1f0d9",
+  "task_type": "invoice_approval",
+  "query": "Approve invoice",
+  "doc_ids": [],
+  "decision": "FAIL",
+  "confidence": 0.4,
+  "top_retrieval_score": null,
+  "evidence_count": 0,
+  "min_evidence_score": 0.3,
+  "policy": {
+    "invoice_amount": 1200,
+    "fraud_flag": true,
+    "provided_fields": [
+      "vendor",
+      "invoice_number",
+      "invoice_date",
+      "total_amount"
+    ]
+  },
+  "policy_violations": [
+    "FRAUD_SUSPECTED"
+  ],
+  "missing_info": [],
+  "evidence": []
+}

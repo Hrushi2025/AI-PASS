@@ -1,0 +1,22 @@
+{
+  "audit_id": "019c2deb-66aa-768e-b086-e83354f6e5da",
+  "task_type": "invoice_approval",
+  "query": "Approve invoice amount 6200",
+  "doc_ids": [],
+  "decision": "NEEDS_INFO",
+  "confidence": 0.4,
+  "top_retrieval_score": null,
+  "evidence_count": 0,
+  "min_evidence_score": 0.3,
+  "policy": {
+    "invoice_amount": 6200,
+    "human_approval_threshold": 5000
+  },
+  "policy_violations": [
+    "HUMAN_APPROVAL_REQUIRED"
+  ],
+  "missing_info": [
+    "Invoice amount 6200 > 5000. Require human approval."
+  ],
+  "evidence": []
+}

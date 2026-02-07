@@ -1,0 +1,27 @@
+{
+  "audit_id": "019c2ddc-9b70-7fba-95bc-d5cc85470fdb",
+  "task_type": "doc_qa",
+  "query": "What is AI-Pass?",
+  "doc_ids": [
+    "doc_1"
+  ],
+  "decision": "PASS",
+  "confidence": 0.85,
+  "policy": {},
+  "policy_violations": [],
+  "missing_info": [],
+  "evidence": [
+    {
+      "doc_id": "doc_1",
+      "chunk_id": "doc_1_p0_c0",
+      "page": 1,
+      "text_snippet": "AI-Pass is an AI Operating System that provides: - A unified AI workspace - An agent execution engine - An automation engine similar to n8n - An AI wallet with credits - Built-in governance and audit logs - A marketplace of AI applications AI-Pass focuses on reliable, evidence-based decisions rather than chat."
+    },
+    {
+      "doc_id": "doc_1",
+      "chunk_id": "doc_1_p0_c0",
+      "page": 1,
+      "text_snippet": "AI-Pass is an AI Operating System that provides: - A unified AI workspace - An agent execution engine - An automation engine similar to n8n - An AI wallet with credits - Built-in governance and audit logs - A marketplace of AI applications AI-Pass focuses on reliable, evidence-based decisions rather than chat."
+    }
+  ]
+}
