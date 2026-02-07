@@ -2,6 +2,7 @@ from typing import List
 
 from app.core.schemas import TaskInput, DecisionOutput, EvidenceItem
 from app.core.confidence import confidence_from_hits
+from app.core.config import EVIDENCE_MIN_SCORE, EVIDENCE_MIN_HITS, CONFIDENCE_PASS_THRESHOLD
 from app.services.rag import RAGService
 from app.services.evaluator import Evaluator
 from app.services.audit import write_audit_log
@@ -10,18 +11,17 @@ from app.services.audit import write_audit_log
 class AgentEngine:
     def __init__(self):
         self.rag = RAGService()
-        self.eval = Evaluator(confidence_threshold=0.70)
+        self.eval = Evaluator(confidence_threshold=CONFIDENCE_PASS_THRESHOLD)
 
     def plan(self, task: TaskInput) -> List[str]:
-        if task.task_type == "invoice_approval":
-            return ["retrieve_evidence", "draft_decision", "evaluate_rules", "deliver"]
+        # Keeping structure consistent for auditability
         return ["retrieve_evidence", "draft_decision", "evaluate_rules", "deliver"]
 
     def execute(self, task: TaskInput) -> DecisionOutput:
-        # 1) Retrieve evidence
+        # 1) Retrieve evidence (already filtered by min score + min hits inside RAG)
         evidence_hits = self.rag.retrieve(task.query, task.doc_ids, top_k=5)
 
-        # ✅ Day 6: Deduplicate evidence by chunk_id (keep best-ranked hits)
+        # 2) Deduplicate evidence by chunk_id (keep best-ranked hits)
         seen = set()
         dedup_hits = []
         for h in evidence_hits:
@@ -31,39 +31,35 @@ class AgentEngine:
                 dedup_hits.append(h)
         evidence_hits = dedup_hits
 
-        # ✅ Day 6: Filter weak/irrelevant evidence (prevents unrelated citations)
-        MIN_EVIDENCE_SCORE = 0.30  # tune later
-        evidence_hits = [
-            h for h in evidence_hits
-            if float(h.get("score", 0.0)) >= MIN_EVIDENCE_SCORE
-        ]
+        # 3) Enforce min hits requirement (extra safety, in case future RAG changes)
+        if len(evidence_hits) < EVIDENCE_MIN_HITS:
+            evidence_hits = []
 
-        # 2) Build evidence items AFTER filtering
+        # 4) Build evidence items AFTER filtering
         evidence_items = [
             EvidenceItem(
-                doc_id=h["doc_id"],
-                chunk_id=h["chunk_id"],
+                doc_id=h.get("doc_id"),
+                chunk_id=h.get("chunk_id"),
                 page=h.get("page"),
                 text_snippet=h.get("text", "")
             )
             for h in evidence_hits
         ]
 
-        # ✅ Day 6: Recompute confidence AFTER filtering
+        # 5) Compute confidence from evidence quality
         conf = confidence_from_hits(evidence_hits)
 
-        # Draft decision (PASS only if strong evidence + high confidence)
+        # Draft decision: PASS only if we have evidence AND confidence passes threshold
         draft = DecisionOutput(
-            decision="PASS" if (evidence_items and conf >= 0.70) else "NEEDS_INFO",
+            decision="PASS" if (len(evidence_items) > 0 and conf >= CONFIDENCE_PASS_THRESHOLD) else "NEEDS_INFO",
             confidence=conf,
             evidence=evidence_items
         )
 
-        # 3) Evaluate rules + policy enforcement (final gatekeeper)
-        # ✅ FIX: pass task.task_type so invoice rules apply ONLY to invoice_approval
+        # 6) Apply governance + policy enforcement
         draft, _ = self.eval.apply_rules(draft, evidence_hits, task.policy, task.task_type)
 
-        # 4) Audit log (add evidence quality metrics)
+        # 7) Audit log
         top_score = float(evidence_hits[0]["score"]) if evidence_hits else None
 
         audit_event = {
@@ -75,7 +71,8 @@ class AgentEngine:
             "confidence": draft.confidence,
             "top_retrieval_score": top_score,
             "evidence_count": len(evidence_hits),
-            "min_evidence_score": MIN_EVIDENCE_SCORE,
+            "evidence_min_score": EVIDENCE_MIN_SCORE,
+            "evidence_min_hits": EVIDENCE_MIN_HITS,
             "policy": task.policy,
             "policy_violations": draft.policy_violations,
             "missing_info": draft.missing_info,

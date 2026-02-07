@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 from sentence_transformers import SentenceTransformer
 
-from app.core.config import EVIDENCE_MIN_SCORE, EVIDENCE_MAX_HITS
+from app.core.config import EVIDENCE_MIN_SCORE, EVIDENCE_MIN_HITS, EVIDENCE_MAX_HITS
 
 COLLECTION = "aipass_docs"
 
@@ -45,13 +45,12 @@ class RAGService:
         for page_idx in range(len(pdf)):
             page_text = pdf[page_idx].get_text("text") or ""
             for c_idx, chunk in enumerate(self._chunk_text(page_text)):
-                # Skip empty chunks (just in case)
                 if not chunk.strip():
                     continue
 
                 emb = self.embedder.encode(chunk).astype(np.float32).tolist()
 
-                # ✅ Human-readable chunk id for citations (stored in payload)
+                # ✅ Human-readable chunk id for citations
                 chunk_id = f"{doc_id}_p{page_idx}_c{c_idx}"
 
                 # ✅ Qdrant point id must be UUID or int
@@ -59,7 +58,7 @@ class RAGService:
 
                 points.append(
                     qm.PointStruct(
-                        id=point_id,  # ✅ UUID
+                        id=point_id,
                         vector=emb,
                         payload={
                             "doc_id": doc_id,
@@ -78,10 +77,11 @@ class RAGService:
 
     def retrieve(self, query: str, doc_ids: List[str], top_k: int = 5) -> List[Dict[str, Any]]:
         """
-        Returns evidence hits with citations.
-        Now includes:
-          - Minimum score threshold filter (EVIDENCE_MIN_SCORE)
-          - Max returned hits cap (EVIDENCE_MAX_HITS)
+        Retrieve evidence from Qdrant with:
+          - filter by doc_ids (optional)
+          - filter by EVIDENCE_MIN_SCORE
+          - require at least EVIDENCE_MIN_HITS valid hits (else return [])
+          - cap to EVIDENCE_MAX_HITS
         """
         q_emb = self.embedder.encode(query).astype(np.float32).tolist()
 
@@ -103,11 +103,9 @@ class RAGService:
             query_filter=flt,
         ).points
 
-        # Sort by score descending
         hits = sorted(hits, key=lambda h: float(h.score), reverse=True)
 
-        # Convert to dict format first (so filtering is simple + consistent)
-        results = []
+        results: List[Dict[str, Any]] = []
         for h in hits:
             p = h.payload or {}
             results.append(
@@ -121,9 +119,11 @@ class RAGService:
             )
 
         # ✅ keep only strong evidence
-        results = [r for r in results if r.get("score", 0) >= EVIDENCE_MIN_SCORE]
+        results = [r for r in results if float(r.get("score", 0.0)) >= EVIDENCE_MIN_SCORE]
+
+        # ✅ If not enough strong evidence, treat as "no evidence"
+        if len(results) < EVIDENCE_MIN_HITS:
+            return []
 
         # ✅ cap returned evidence hits
-        results = results[:EVIDENCE_MAX_HITS]
-
-        return results
+        return results[:EVIDENCE_MAX_HITS]
