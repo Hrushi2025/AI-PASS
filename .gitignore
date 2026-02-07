@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Local data / logs
+data/audit_logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
