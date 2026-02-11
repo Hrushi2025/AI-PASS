@@ -46,7 +46,7 @@ class Evaluator:
             draft.missing_info.append("Low confidence. Human review needed.")
 
         # ==================================================
-        # ✅ INVOICE POLICY PACK (ONLY FOR invoice_approval)
+        # INVOICE POLICY PACK (ONLY FOR invoice_approval)
         # ==================================================
         if task_type == "invoice_approval":
             invoice_amount = policy.get("invoice_amount")

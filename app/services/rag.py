@@ -10,16 +10,26 @@ from app.core.config import EVIDENCE_MIN_SCORE, EVIDENCE_MIN_HITS, EVIDENCE_MAX_
 
 COLLECTION = "aipass_docs"
 
-
 class RAGService:
     def __init__(self, qdrant_url: str = "http://127.0.0.1:6333"):
-        # ✅ Use 127.0.0.1 on Windows to avoid localhost issues sometimes
-        self.client = QdrantClient(url=qdrant_url)
+        self.enabled = False
+        self.init_error = None
+
         self.embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        self._ensure_collection()
+
+        try:
+            self.client = QdrantClient(url=qdrant_url, timeout=2.0)
+            self._ensure_collection()
+            self.enabled = True
+        except Exception as e:
+            # No crash: just disable RAG
+            self.client = None
+            self.enabled = False
+            self.init_error = str(e)
 
     def _ensure_collection(self):
-        # 384 dims for MiniLM-L6-v2
+        if not self.client:
+            return
         try:
             self.client.get_collection(COLLECTION)
         except Exception:
@@ -38,22 +48,20 @@ class RAGService:
         return chunks
 
     def ingest_pdf(self, file_bytes: bytes, doc_id: str) -> Dict[str, Any]:
+        if not self.enabled:
+            return {"doc_id": doc_id, "chunks_indexed": 0, "rag_enabled": False, "error": self.init_error}
+
         pdf = fitz.open(stream=file_bytes, filetype="pdf")
         points: List[qm.PointStruct] = []
-
         chunk_count = 0
+
         for page_idx in range(len(pdf)):
             page_text = pdf[page_idx].get_text("text") or ""
             for c_idx, chunk in enumerate(self._chunk_text(page_text)):
                 if not chunk.strip():
                     continue
-
                 emb = self.embedder.encode(chunk).astype(np.float32).tolist()
-
-                # ✅ Human-readable chunk id for citations
                 chunk_id = f"{doc_id}_p{page_idx}_c{c_idx}"
-
-                # ✅ Qdrant point id must be UUID or int
                 point_id = str(uuid.uuid4())
 
                 points.append(
@@ -73,27 +81,17 @@ class RAGService:
         if points:
             self.client.upsert(collection_name=COLLECTION, points=points)
 
-        return {"doc_id": doc_id, "chunks_indexed": chunk_count}
+        return {"doc_id": doc_id, "chunks_indexed": chunk_count, "rag_enabled": True}
 
     def retrieve(self, query: str, doc_ids: List[str], top_k: int = 5) -> List[Dict[str, Any]]:
-        """
-        Retrieve evidence from Qdrant with:
-          - filter by doc_ids (optional)
-          - filter by EVIDENCE_MIN_SCORE
-          - require at least EVIDENCE_MIN_HITS valid hits (else return [])
-          - cap to EVIDENCE_MAX_HITS
-        """
-        q_emb = self.embedder.encode(query).astype(np.float32).tolist()
+        if not self.enabled:
+            return []
 
+        q_emb = self.embedder.encode(query).astype(np.float32).tolist()
         flt = None
         if doc_ids:
             flt = qm.Filter(
-                must=[
-                    qm.FieldCondition(
-                        key="doc_id",
-                        match=qm.MatchAny(any=doc_ids),
-                    )
-                ]
+                must=[qm.FieldCondition(key="doc_id", match=qm.MatchAny(any=doc_ids))]
             )
 
         hits = self.client.query_points(
@@ -108,22 +106,15 @@ class RAGService:
         results: List[Dict[str, Any]] = []
         for h in hits:
             p = h.payload or {}
-            results.append(
-                {
-                    "score": float(h.score),
-                    "doc_id": p.get("doc_id"),
-                    "chunk_id": p.get("chunk_id"),
-                    "page": p.get("page"),
-                    "text": (p.get("text", "") or "")[:500],
-                }
-            )
+            results.append({
+                "score": float(h.score),
+                "doc_id": p.get("doc_id"),
+                "chunk_id": p.get("chunk_id"),
+                "page": p.get("page"),
+                "text": (p.get("text", "") or "")[:500],
+            })
 
-        # ✅ keep only strong evidence
         results = [r for r in results if float(r.get("score", 0.0)) >= EVIDENCE_MIN_SCORE]
-
-        # ✅ If not enough strong evidence, treat as "no evidence"
         if len(results) < EVIDENCE_MIN_HITS:
             return []
-
-        # ✅ cap returned evidence hits
         return results[:EVIDENCE_MAX_HITS]
