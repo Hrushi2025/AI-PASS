@@ -18,3 +18,24 @@ data/audit_logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Virtual environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Data and uploads (should NOT be in Git)
+data/
+*.pdf
+*.txt
+*.docx
+*.json
+
+# Local test files
+offer_*.pdf
+offer_*.txt
+
+# Docker local volumes
+db.sqlite3
+*.db
